@@ -9,7 +9,7 @@ app.use(express.json());
 app.use('/api', dataRoutes);
 
 const PORT = process.env.PORT || 3000;
-const HOST = 'http://localhost';  // Change this if deployed
+const HOST = 'http://couchbase-rest-service-main';  // Change this if deployed
 
 app.listen(PORT, () => {
   console.log(`Server running at ${HOST}:${PORT}`);
