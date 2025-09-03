@@ -138,12 +138,20 @@ router.post("/hospital/delete", async (req, res) => {
 
     const roleName = "role_tx_Treatment_" + id;
 
-    const response = await fetch(`${SGW_ADMIN_URL}/_role/${encodeURIComponent(roleName)}`, {
-      method: "DELETE",
+    // Step 1: Check if role already exists
+    const checkRoleRes = await fetch(`${SGW_ADMIN_URL}/_role/${encodeURIComponent(roleName)}`, {
+      method: "GET",
       headers: {
         "Authorization": "Basic " + Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString("base64")
       }
     });
+    if(checkRoleRes.ok){
+       const response = await fetch(`${SGW_ADMIN_URL}/_role/${encodeURIComponent(roleName)}`, {
+       method: "DELETE",
+       headers: {
+         "Authorization": "Basic " + Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString("base64")
+       }
+     });
 
     const body = await response.text();
     console.log("SGW role deletion response:", response.status, body);
@@ -157,6 +165,8 @@ router.post("/hospital/delete", async (req, res) => {
         sgwBody: body
       });
     }
+
+  } 
   } catch (err) {
     console.error("Error deleting role:", err);
     return res.status(500).json({ error: "Internal server error" });
