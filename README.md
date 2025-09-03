@@ -1,6 +1,6 @@
 # Couchbase REST API Service
 
-This repository contains a REST API service that interacts with Couchbase.
+This repository contains a REST API service that interacts with Couchbase
 
 ## Prerequisites
 
