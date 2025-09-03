@@ -104,5 +104,41 @@ router.post("/hospital", async (req, res) => {
   }
 });
 
+// Delete SGW Role when hospital doc is deleted
+router.post("/hospital/delete", async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) {
+      return res.status(400).json({ error: "Missing id" });
+    }
+
+    const roleName = "role_tx_Treatment_" + id;
+
+    const response = await fetch(`${SGW_ADMIN_URL}/_role/${encodeURIComponent(roleName)}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": "Basic " + Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString("base64")
+      }
+    });
+
+    const body = await response.text();
+    console.log("SGW role deletion response:", response.status, body);
+
+    if (response.ok) {
+      res.json({ success: true, deletedRole: roleName });
+    } else {
+      res.status(response.status).json({
+        error: "Role deletion failed",
+        sgwStatus: response.status,
+        sgwBody: body
+      });
+    }
+  } catch (err) {
+    console.error("Error deleting role:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
 
 module.exports = router;
