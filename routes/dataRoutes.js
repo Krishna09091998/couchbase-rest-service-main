@@ -51,20 +51,16 @@ router.post("/triggerEvent", async (req, res) => {
 // + create SGW role
 router.post("/hospital", async (req, res) => {
   try {
-    
-    // Use id and name to trigger the Eventing function
-    const { id, name} = req.body;
+    const { id, name } = req.body;
 
     if (!id || !name) {
       return res.status(400).json({ error: "Missing id or name" });
     }
 
-    console.log(`Received hospital doc from  Eventing:${id}, ${name}`);
+    console.log(`Received hospital doc from Eventing: ${id}, ${name}`);
 
-
-    // only handle SGW Role creation:
     const roleName = "role_tx_Treatment_" + id;
-    const payload = {
+    const newPayload = {
       name: roleName,
       collection_access: {
         treatment: {
@@ -75,34 +71,61 @@ router.post("/hospital", async (req, res) => {
       }
     };
 
-    const response = await fetch(`${SGW_ADMIN_URL}/_role/${encodeURIComponent(roleName)}`, {
+    // Step 1: Check if role already exists
+    const checkRoleRes = await fetch(`${SGW_ADMIN_URL}/_role/${encodeURIComponent(roleName)}`, {
+      method: "GET",
+      headers: {
+        "Authorization": "Basic " + Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString("base64")
+      }
+    });
+
+    if (checkRoleRes.ok) {
+      // Role exists → compare channel mapping
+      const existingRole = await checkRoleRes.json();
+      const existingChannels = existingRole?.collection_access?.treatment?.Encounter?.admin_channels || [];
+
+      const newChannels = newPayload.collection_access.treatment.Encounter.admin_channels;
+
+      // Compare arrays (basic stringified comparison for simplicity)
+      if (JSON.stringify(existingChannels) === JSON.stringify(newChannels)) {
+        console.log(`Role ${roleName} already exists with same channels. Skipping update.`);
+        return res.json({ success: true, action: "skipped", role: roleName });
+      }
+
+      console.log(`Role ${roleName} exists but channel mapping changed. Updating...`);
+    } else {
+      console.log(`Role ${roleName} does not exist. Creating...`);
+    }
+
+    // Step 2: Create or Update role
+    const putRoleRes = await fetch(`${SGW_ADMIN_URL}/_role/${encodeURIComponent(roleName)}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        //"Authorization": "Basic " + btoa(`${ADMIN_USER}:${ADMIN_PASS}`)
         "Authorization": "Basic " + Buffer.from(`${ADMIN_USER}:${ADMIN_PASS}`).toString("base64")
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(newPayload)
     });
 
-    const body = await response.text();
-    console.log("SGW role creation response:", response.status, body);
+    const body = await putRoleRes.text();
+    console.log("SGW role creation/update response:", putRoleRes.status, body);
 
-    if (response.ok) {
-      console.log("Role created successfully...!");
-      res.json({ success: true, id, role: roleName });
+    if (putRoleRes.ok) {
+      return res.json({ success: true, action: "created-or-updated", role: roleName });
     } else {
-      res.status(response.status).json({ 
-        error: "Role creation failed", 
-        sgwStatus: response.status, 
-        sgwBody: body 
+      return res.status(putRoleRes.status).json({
+        error: "Role creation/update failed",
+        sgwStatus: putRoleRes.status,
+        sgwBody: body
       });
     }
+
   } catch (err) {
-    console.error("Error inserting hospital or creating role:", err);
+    console.error("Error handling /hospital request:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 // Delete SGW Role when hospital doc is deleted
 router.post("/hospital/delete", async (req, res) => {
