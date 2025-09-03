@@ -166,7 +166,13 @@ router.post("/hospital/delete", async (req, res) => {
       });
     }
 
-  } 
+  }else {
+      return res.status(response.status).json({
+        error: "Role doesn't exists..!",
+        sgwStatus: response.status,
+        sgwBody: body
+      });
+    }
   } catch (err) {
     console.error("Error deleting role:", err);
     return res.status(500).json({ error: "Internal server error" });
