@@ -169,8 +169,6 @@ router.post("/hospital/delete", async (req, res) => {
   }else {
       return res.status(checkRoleRes.status).json({
         error: "Role doesn't exists..!",
-        sgwStatus: checkRoleRes.status,
-        sgwBody: body
       });
     }
   } catch (err) {
