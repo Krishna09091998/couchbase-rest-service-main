@@ -122,7 +122,7 @@ router.post("/hospital", async (req, res) => {
 
   } catch (err) {
     console.error("Error handling /hospital request:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -149,9 +149,9 @@ router.post("/hospital/delete", async (req, res) => {
     console.log("SGW role deletion response:", response.status, body);
 
     if (response.ok) {
-      res.json({ success: true, deletedRole: roleName });
+      return res.json({ success: true, action: "role got deleted",deletedRole: roleName });
     } else {
-      res.status(response.status).json({
+      return res.status(response.status).json({
         error: "Role deletion failed",
         sgwStatus: response.status,
         sgwBody: body
@@ -159,7 +159,7 @@ router.post("/hospital/delete", async (req, res) => {
     }
   } catch (err) {
     console.error("Error deleting role:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
